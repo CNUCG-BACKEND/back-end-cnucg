@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Cão-Guia</title>
+    <style>
+        .error-messages {
+            color: red;
+            font-weight: bold;
+        }
+        .success-message {
+            color: green;
+            font-weight: bold;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cadastro de Cão-Guia</h1>
+    <div class="error-messages" id="generalErrors"></div>
+    <div class="success-message hidden" id="generalSuccess"></div>
+    <form id="registerDogForm" enctype="multipart/form-data">
+        <div class="error-messages" id="registerDogErrors"></div>
+        <div class="success-message hidden" id="registerDogSuccess"></div>
+        <input type="text" id="dogName" placeholder="Nome" required><br>
+        <input type="text" id="dogSex" placeholder="Sexo" required><br>
+        <input type="text" id="dogColor" placeholder="Cor" required><br>
+        <input type="date" id="dogBirthdate" placeholder="Data de Nascimento" required><br>
+        <input type="text" id="dogBreed" placeholder="Raça" required><br>
+        <input type="text" id="dogRegistrationNumber" placeholder="Número de Registro" required><br>
+        <input type="file" id="dogImage" name="imagem" accept="image/jpeg, image/png"><br>
+        <small>Foto opcional, de preferência 3:4, máximo 5MB.</small><br>
+        <input type="text" id="institutionCNPJ" placeholder="CNPJ da Instituição (opcional)" autocomplete="off"><br>
+        <div id="institutionResult" class="success-message"></div><br>
+        <button type="submit">Registrar Cão-Guia</button>
+    </form>
+
+    <script>
+        const apiUrl = 'http://localhost:5000';
+
+        document.getElementById('institutionCNPJ').addEventListener('blur', async () => {
+            const query = document.getElementById('institutionCNPJ').value.trim();
+            const generalErrors = document.getElementById('generalErrors');
+            const institutionResult = document.getElementById('institutionResult');
+            const token = localStorage.getItem('token');
+
+            generalErrors.innerText = '';
+            institutionResult.innerText = '';
+
+            if (query === '') {
+                document.getElementById('institutionCNPJ').dataset.instituicaoId = ''; 
+                return; 
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/instituicoes/search?query=${encodeURIComponent(query)}`, {
+                    method: 'GET',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (response.ok) {
+                    const institution = await response.json();
+                    institutionResult.innerText = `Instituição encontrada: ${institution.razao_social} - ${cleanNumberString(institution.cnpj)}`;
+                    document.getElementById('institutionCNPJ').dataset.instituicaoId = institution.id;
+                } else {
+
+                    if (response.status === 401) {
+                        console.warn('Erro ao pesquisar instituições: Token não fornecido');
+                    } else {
+                        const result = await response.json();
+                        generalErrors.innerText = `Erro ao pesquisar instituições: ${result.message}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao pesquisar instituições:', error);
+                generalErrors.innerText = 'Erro ao pesquisar instituições.';
+            }
+        });
+
+        document.getElementById('institutionCNPJ').addEventListener('input', () => {
+            const generalErrors = document.getElementById('generalErrors');
+            generalErrors.innerText = ''; 
+        });
+
+        function cleanNumberString(value) {
+            return value.replace(/[^\d]/g, '');
+        }
+
+        document.getElementById('registerDogForm').addEventListener('submit', async (e) => {
+            e.preventDefault(); 
+
+            const registerDogErrors = document.getElementById('registerDogErrors');
+            const registerDogSuccess = document.getElementById('registerDogSuccess');
+
+            registerDogErrors.innerText = '';
+            registerDogSuccess.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('nome', document.getElementById('dogName').value);
+            formData.append('sexo', document.getElementById('dogSex').value);
+            formData.append('cor', document.getElementById('dogColor').value);
+            formData.append('data_nascimento', document.getElementById('dogBirthdate').value);
+            formData.append('raca', document.getElementById('dogBreed').value);
+            formData.append('numero_registro', document.getElementById('dogRegistrationNumber').value);
+
+            const instituicaoId = document.getElementById('institutionCNPJ').dataset.instituicaoId;
+            formData.append('cnpj_instituicao', instituicaoId ? instituicaoId : null);
+
+            const imageFile = document.getElementById('dogImage').files[0];
+            if (imageFile) {
+                formData.append('imagem', imageFile);
+            }
+
+            console.log('Enviando dados de registro:');
+            for (let pair of formData.entries()) {
+                console.log(pair[0]+ ', ' + pair[1]); 
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    registerDogErrors.innerText = 'Você precisa estar autenticado para registrar um cão-guia.';
+                    return;
+                }
+
+                const response = await fetch(`${apiUrl}/caes-guia`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Resposta do servidor:', result);
+                    registerDogSuccess.innerText = 'Cão-guia registrado com sucesso!';
+                    registerDogSuccess.classList.remove('hidden');
+                    document.getElementById('registerDogForm').reset();
+                    document.getElementById('institutionCNPJ').dataset.instituicaoId = '';
+                    document.getElementById('institutionResult').innerText = '';
+                } else {
+                    const result = await response.json();
+                    console.log('Erro do servidor:', result);
+                    registerDogErrors.innerText = `Erro ao registrar cão-guia: ${result.message}`;
+                }
+            } catch (error) {
+                console.error('Erro ao registrar cão-guia:', error);
+                registerDogErrors.innerText = `Erro ao registrar cão-guia: ${error.message || error}`;
+            }
+        });
+    </script>
+</body>
+</html>

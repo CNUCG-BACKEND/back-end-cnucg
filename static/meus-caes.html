@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meus Cães-Guia</title>
+    <style>
+        .error-messages {
+            color: red;
+            font-weight: bold;
+        }
+        .success-message {
+            color: green;
+            font-weight: bold;
+        }
+        .caes-guia {
+            margin-top: 20px;
+        }
+        .cao-guia {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .cao-guia img {
+            max-width: 200px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Meus Cães-Guia</h1>
+    <div class="error-messages" id="generalErrors"></div>
+    <div class="caes-guia" id="caesGuiaList"></div>
+
+    <script>
+        const apiUrl = 'http://localhost:5000';
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); 
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        async function fetchCaesGuia() {
+            const generalErrors = document.getElementById('generalErrors');
+            const caesGuiaList = document.getElementById('caesGuiaList');
+
+            generalErrors.innerText = '';
+            caesGuiaList.innerHTML = '';
+
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    generalErrors.innerText = 'Você precisa estar autenticado para ver seus cães-guia.';
+                    return;
+                }
+
+                const response = await fetch(`${apiUrl}/caes-guia/meus`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const caesGuia = await response.json();
+                    if (caesGuia.length === 0) {
+                        caesGuiaList.innerHTML = '<p>Você não possui cães-guia vinculados.</p>';
+                    } else {
+                        caesGuia.forEach(cao => {
+                            const caoDiv = document.createElement('div');
+                            caoDiv.className = 'cao-guia';
+                            const ativoStatus = cao.ativo ? 'Ativo' : 'Inativo';
+                            const imagemUrl = cao.imagem ? `${apiUrl}/uploads/${cao.imagem}` : '';
+                            const dataNascimentoFormatada = formatDate(cao.data_nascimento);
+                            caoDiv.innerHTML = `
+                                <h2>${cao.nome}</h2>
+                                <p><strong>Sexo:</strong> ${cao.sexo}</p>
+                                <p><strong>Cor:</strong> ${cao.cor}</p>
+                                <p><strong>Raça:</strong> ${cao.raca}</p>
+                                <p><strong>Data de Nascimento:</strong> ${dataNascimentoFormatada}</p>
+                                <p><strong>Número de Registro:</strong> ${cao.numero_registro}</p>
+                                <p><strong>Status:</strong> ${ativoStatus}</p>
+                                ${imagemUrl ? `<img src="${imagemUrl}" alt="Foto de ${cao.nome}">` : ''}
+                            `;
+                            caesGuiaList.appendChild(caoDiv);
+                        });
+                    }
+                } else {
+                    const result = await response.json();
+                    console.log('Erro do servidor:', result);
+                    generalErrors.innerText = `Erro ao obter cães-guia: ${result.message}`;
+                }
+            } catch (error) {
+                console.error('Erro ao obter cães-guia:', error);
+                generalErrors.innerText = `Erro ao obter cães-guia: ${error.message || error}`;
+            }
+        }
+
+        window.onload = fetchCaesGuia;
+    </script>
+</body>
+</html>

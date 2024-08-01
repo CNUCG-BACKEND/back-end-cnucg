@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <style>
+    .error-messages {
+      color: red;
+      font-weight: bold;
+    }
+    .success-message {
+      color: green;
+      font-weight: bold;
+    }
+    .validation-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin Dashboard</h1>
+  
+  <div id="validationSection">
+    <h2>Validar Cadastros</h2>
+    
+    <h3>Usuários</h3>
+    <select id="filterUserStatus">
+      <option value="pendente">Pendentes</option>
+      <option value="aprovado">Aprovados</option>
+      <option value="rejeitado">Rejeitados</option>
+    </select>
+    <button id="filterUserButton">Filtrar Usuários</button>
+    <div id="userValidationList"></div>
+
+    <h3>Instituições</h3>
+    <select id="filterInstitutionStatus">
+      <option value="pendente">Pendentes</option>
+      <option value="aprovado">Aprovados</option>
+      <option value="rejeitado">Rejeitados</option>
+    </select>
+    <button id="filterInstitutionButton">Filtrar Instituições</button>
+    <div id="institutionValidationList"></div>
+  </div>
+
+  <script>
+    const apiUrl = 'http://localhost:5000';
+
+    document.getElementById('filterUserButton').addEventListener('click', async () => {
+      const status = document.getElementById('filterUserStatus').value;
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Você precisa estar autenticado para acessar esta seção.');
+          return;
+        }
+
+        const response = await fetch(`${apiUrl}/administradores/listar/usuarios/${status}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          renderUserValidationList(result, status);
+        } else {
+          alert(`Erro ao buscar cadastros. Motivo: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar cadastros:', error);
+        alert(`Erro ao buscar cadastros. Motivo: ${error.message || error}`);
+      }
+    });
+
+    document.getElementById('filterInstitutionButton').addEventListener('click', async () => {
+      const status = document.getElementById('filterInstitutionStatus').value;
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Você precisa estar autenticado para acessar esta seção.');
+          return;
+        }
+
+        const response = await fetch(`${apiUrl}/administradores/listar/instituicoes/${status}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          renderInstitutionValidationList(result, status);
+        } else {
+          alert(`Erro ao buscar cadastros. Motivo: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar cadastros:', error);
+        alert(`Erro ao buscar cadastros. Motivo: ${error.message || error}`);
+      }
+    });
+
+    function renderUserValidationList(data, currentStatus) {
+      const listContainer = document.getElementById('userValidationList');
+      listContainer.innerHTML = '';
+      data.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'validation-item';
+        itemDiv.innerHTML = `
+          <p>Nome: ${item.nome}</p>
+          <p>Email: ${item.email}</p>
+          <p>Status: ${item.status_validacao}</p>
+        `;
+
+        if (currentStatus === 'pendente') {
+          itemDiv.innerHTML += `
+            <button onclick="updateUserStatus(${item.id}, 'aprovado')">Aprovar</button>
+            <button onclick="updateUserStatus(${item.id}, 'rejeitado')">Rejeitar</button>
+          `;
+        } else if (currentStatus === 'aprovado') {
+          itemDiv.innerHTML += `
+            <button onclick="updateUserStatus(${item.id}, 'pendente')">Colocar em Pendência</button>
+            <button onclick="updateUserStatus(${item.id}, 'rejeitado')">Rejeitar</button>
+          `;
+        } else if (currentStatus === 'rejeitado') {
+          itemDiv.innerHTML += `
+            <button onclick="updateUserStatus(${item.id}, 'pendente')">Colocar em Pendência</button>
+            <button onclick="updateUserStatus(${item.id}, 'aprovado')">Aprovar</button>
+          `;
+        }
+
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    function renderInstitutionValidationList(data, currentStatus) {
+      const listContainer = document.getElementById('institutionValidationList');
+      listContainer.innerHTML = '';
+      data.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'validation-item';
+        itemDiv.innerHTML = `
+          <p>Razão Social: ${item.razao_social}</p>
+          <p>Email: ${item.email}</p>
+          <p>Status: ${item.status_validacao}</p>
+        `;
+
+        if (currentStatus === 'pendente') {
+          itemDiv.innerHTML += `
+            <button onclick="updateInstitutionStatus(${item.id}, 'aprovado')">Aprovar</button>
+            <button onclick="updateInstitutionStatus(${item.id}, 'rejeitado')">Rejeitar</button>
+          `;
+        } else if (currentStatus === 'aprovado') {
+          itemDiv.innerHTML += `
+            <button onclick="updateInstitutionStatus(${item.id}, 'pendente')">Colocar em Pendência</button>
+            <button onclick="updateInstitutionStatus(${item.id}, 'rejeitado')">Rejeitar</button>
+          `;
+        } else if (currentStatus === 'rejeitado') {
+          itemDiv.innerHTML += `
+            <button onclick="updateInstitutionStatus(${item.id}, 'pendente')">Colocar em Pendência</button>
+            <button onclick="updateInstitutionStatus(${item.id}, 'aprovado')">Aprovar</button>
+          `;
+        }
+
+        listContainer.appendChild(itemDiv);
+      });
+    }
+
+    async function updateUserStatus(id, status) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Você precisa estar autenticado para realizar esta ação.');
+          return;
+        }
+
+        const motivo_rejeicao = status === 'rejeitado' ? prompt('Motivo da rejeição:') : null;
+
+        const response = await fetch(`${apiUrl}/validacoes/validar-usuario/${id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status, motivo_rejeicao })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Status atualizado com sucesso.');
+          document.getElementById('filterUserButton').click(); // Refresh the list
+        } else {
+          alert(`Erro ao atualizar status. Motivo: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao atualizar status:', error);
+        alert(`Erro ao atualizar status. Motivo: ${error.message || error}`);
+      }
+    }
+
+    async function updateInstitutionStatus(id, status) {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Você precisa estar autenticado para realizar esta ação.');
+          return;
+        }
+
+        const motivo_rejeicao = status === 'rejeitado' ? prompt('Motivo da rejeição:') : null;
+
+        const response = await fetch(`${apiUrl}/validacoes/validar-instituicao/${id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status, motivo_rejeicao })
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          alert('Status atualizado com sucesso.');
+          document.getElementById('filterInstitutionButton').click(); 
+        } else {
+          alert(`Erro ao atualizar status. Motivo: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao atualizar status:', error);
+        alert(`Erro ao atualizar status. Motivo: ${error.message || error}`);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+### Adicionar um novo cão-guia
+POST http://localhost:5000/cao-guia HTTP/1.1
+Content-Type: application/json
+
+{
+    "nome": "Cão Testeb",
+    "sexo": "masc",
+    "cor": "preto",
+    "data_nascimento": "2020-01-01",
+    "raca": "Labrador",
+    "numero_registro": 123456,
+    "ativo": true,
+    "id_instituicao": 1,
+    "id_usuario": 1
+}
+
+### Obter um cão-guia específico
+GET http://localhost:5000/cao-guia/1 HTTP/1.1
+
+### Atualizar informações de um cão-guia
+PUT http://localhost:5000/cao-guia/1 HTTP/1.1
+Content-Type: application/json
+
+{
+    "nome": "Cão Atualizado",
+    "sexo": "masc",
+    "cor": "marrom",
+    "data_nascimento": "2020-01-01",
+    "raca": "Golden Retriever",
+    "numero_registro": 654321,
+    "ativo": true,
+    "id_instituicao": 1,
+    "id_usuario": 1
+}
+
+### Excluir (inativar) um cão-guia específico
+DELETE http://localhost:5000/cao-guia/1 HTTP/1.1

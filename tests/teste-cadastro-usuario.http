@@ -1,0 +1,28 @@
+### Registro de novo usuário
+POST http://localhost:5000/auth/register HTTP/1.1
+Content-Type: application/json
+
+{
+    "nome": "Yanzinha1234",
+    "cpf": "12345678810",
+    "sexo": "masc",
+    "data_nascimento": "1980-01-01",
+    "endereco_logradouro": "Rua A",
+    "endereco_numero": "123",
+    "endereco_complemento": "Apto 1",
+    "endereco_cep": "12345678",
+    "endereco_cidade": "Cidade Teste",
+    "endereco_estado": "ST",
+    "endereco_bairro": "Bairro Teste",
+    "email": "123123@gmail.com",
+    "senha": "123123",
+    "rg": "1234567890",
+    "telefone": "123456789",
+    "id_instituicao": 1
+}
+
+### Obter um usuário específico
+GET http://localhost:5000/usuario/1 HTTP/1.1
+
+### Excluir (inativar) um usuário específico
+DELETE http://localhost:5000/usuario/1 HTTP/1.1
